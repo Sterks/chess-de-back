@@ -1,0 +1,18 @@
+http:
+  host: 127.0.0.1
+  port: 8001
+  maxHeaderBytes: 20
+  readTimeout: 50s
+  writeTimeout: 50s
+
+database:
+  host: 127.0.0.1
+  user: dashboard_user
+  password: password
+  dbname: api
+  port: 5433
+  sslmode: disable
+  timezone: Europe/Moscow
+
+mongo_db:
+  url: mongodb://admin:S3cret@localhost:27017/admin
