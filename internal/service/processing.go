@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/notnil/chess"
@@ -224,15 +223,16 @@ func (f *FileProcessingService) ParseMainAndSlaveSteps() {
 	var arrayTypeStep []domain.MetaStep
 
 	for _, value := range f.InfoStep.ArrayMetaStep {
+
 		jf := strings.Contains(value.StepString, "(")
-		if jf {
+		if !jf {
 			mm = value
-			mm.Main = false
+			mm.Main = true
 			// mm.StepString = value
 			arrayTypeStep = append(arrayTypeStep, mm)
 		} else {
 			mm = value
-			mm.Main = true
+			mm.Main = false
 			// mm.StepString = value
 			arrayTypeStep = append(arrayTypeStep, mm)
 		}
@@ -245,38 +245,40 @@ func (f *FileProcessingService) GetInfoBoth() {
 	var meta domain.MetaStep
 	var re = regexp.MustCompile(`(?m)[0-9]{1,2}\.`)
 	for _, value := range f.InfoStep.ArrayMetaStep {
-		var arIntIndex []int
+		// var arIntIndex []int
 		value.StepString = strings.Replace(value.StepString, "(_", "", -1)
 		value.StepString = strings.Replace(value.StepString, "_)", "", -1)
 		value.StepString = strings.Replace(value.StepString, ".__", "", -1)
 		value.StepString = strings.Replace(value.StepString, "__", "", -1)
 		meta = value
-		arNumber := re.FindAllString(value.StepString, -1)
-		for _, val := range arNumber {
-			v1 := strings.Trim(val, "")
-			v2 := strings.ReplaceAll(v1, ".", "")
-			v3 := strings.ReplaceAll(v2, "", "")
-			i, err := strconv.Atoi(v3)
-			if err != nil {
-				log.Fatal(i)
-			}
-			arIntIndex = append(arIntIndex, i)
-		}
+		// arNumber := re.FindAllString(value.StepString, -1)
+		// for _, val := range arNumber {
+		// 	v1 := strings.Trim(val, "")
+		// 	v2 := strings.ReplaceAll(v1, ".", "")
+		// 	v3 := strings.ReplaceAll(v2, "", "")
+		// 	i, err := strconv.Atoi(v3)
+		// 	if err != nil {
+		// 		log.Fatal(i)
+		// 	}
+		// 	// arIntIndex = append(arIntIndex, i)
+		// }
 
 		arrayStep := re.Split(value.StepString, -1)
-		var arMetaBothTrim []domain.MetaBoth
+
 		var metaBoth domain.MetaBoth
+		var arMetaBothTrim []domain.MetaBoth
 		for _, v := range arrayStep {
-			for _, va := range arIntIndex {
-				v = strings.Trim(v, " ")
-				if len(v) > 0 {
-					metaBoth.BothString = v
-					metaBoth.NumberStep = va
-					arMetaBothTrim = append(arMetaBothTrim, metaBoth)
-				}
+			// for _, va := range arIntIndex {
+			v1 := strings.Trim(v, " ")
+			if len(v) > 0 {
+				metaBoth.BothString = v1
+				// metaBoth.NumberStep = va
+				arMetaBothTrim = append(arMetaBothTrim, metaBoth)
 			}
+			// }
+			meta.MetaBoth = arMetaBothTrim
 		}
-		meta.MetaBoth = arMetaBothTrim
+
 		metaA = append(metaA, meta)
 	}
 	f.InfoStep.ArrayMetaStep = metaA
@@ -321,14 +323,13 @@ func (f *FileProcessingService) CheckSteps() {
 	for _, value := range f.InfoStep.ArrayMetaStep {
 		if value.Main {
 			for _, v := range value.MetaBoth {
-				// var araiOneStep []domain.OneStep
 				for _, j := range v.OneStep {
-					// araiOneStep = append(araiOneStep, j)
+					// var oneStep domain.OneStep
+					// oneStep = j
 					if err := game.MoveStr(j.Step); err != nil {
-						log.Println(j, " - ", err)
+						log.Println(err, value)
 						break
 					}
-					j.FEN = game.FEN()
 					fmt.Println(game.Position().Board().Draw())
 				}
 			}
@@ -344,7 +345,6 @@ func Replace(st string) string {
 		"C":   "B",
 		"С":   "B",
 		"Ф":   "Q",
-		"Кр":  "K",
 		":":   "x",
 		" : ": "x",
 		"е":   "e",
@@ -353,7 +353,7 @@ func Replace(st string) string {
 		// "0": "O",
 		"—": "-",
 	}
-
+	st = strings.Replace(st, "Кр", "K", -1)
 	st = strings.Replace(st, "С : ", "Bx", -1)
 	st = strings.Replace(st, ".__", "", -1)
 	st = strings.Replace(st, ". __", "", -1)
