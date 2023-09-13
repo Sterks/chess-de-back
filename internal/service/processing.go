@@ -60,7 +60,6 @@ func (f *FileProcessingService) GetAllSteps() {
 	}
 	f.InfoStep.AllStepsInPart = str
 
-	// var info domain.InfoStep
 	var meta domain.MetaStep
 	var metaA []domain.MetaStep
 	for key, value := range f.InfoStep.AllStepsInPart {
@@ -320,14 +319,21 @@ func (f *FileProcessingService) GetInfoBoth() {
 
 func (f *FileProcessingService) CheckSteps() {
 	game := chess.NewGame()
+	n := true
 	for _, value := range f.InfoStep.ArrayMetaStep {
+
+		if !n {
+			break
+		}
 		if value.Main {
 			for _, v := range value.MetaBoth {
 				for _, j := range v.OneStep {
-					// var oneStep domain.OneStep
-					// oneStep = j
 					if err := game.MoveStr(j.Step); err != nil {
+						if j.Step == ".." {
+							continue
+						}
 						log.Println(err, value)
+						n = false
 						break
 					}
 					fmt.Println(game.Position().Board().Draw())
@@ -362,6 +368,7 @@ func Replace(st string) string {
 	for key, value := range lt {
 		st = strings.Replace(st, key, value, -1)
 	}
+	st = strings.Replace(st, "0-0", "O-O", -1)
 	return st
 }
 
