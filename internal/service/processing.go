@@ -3,14 +3,31 @@ package service
 import (
 	"chess-backend/internal/domain"
 	"chess-backend/internal/repository"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/notnil/chess"
 	"github.com/tenkoh/go-docc"
 )
+
+// ErrorSteps(err, j, v.NumberStep, v.BothString, value.StepString, v.Main, v.Paragraph, v.NumberInParagraph)
+func ErrorSteps(err error,
+	step string,
+	numberStep int,
+	bothString string,
+	stepString string,
+	main bool,
+	paragraph int,
+	numberInParagraph int,
+) error {
+	er := fmt.Sprintf("error occurred at the step - %s, number - %d, both - %s, string steps - %s, main - %v, paragraph - %d, number in paragraph - %d", step, numberStep, bothString, stepString, main, paragraph, numberInParagraph)
+	e := errors.New(er)
+	return e
+}
 
 type FileProcessingService struct {
 	File     string
@@ -90,59 +107,6 @@ func (f *FileProcessingService) GetAllSteps() {
 	f.InfoStep.ArrayMetaStep = metaArrr
 }
 
-// func (f *FileProcessingService) GetAll() {
-// 	// var infoA []domain.InfoStep
-// 	// var info domain.InfoStep
-// 	for key, value := range f.InfoStep.AllStepsInPart {
-// 		if len(value) > 1 {
-// 			for k, v := range value {
-// 				Replace(v)
-// 				fmt.Println(key, value, k, v)
-// 			}
-// 		} else {
-// 			Replace(value[0])
-// 		}
-// 	}
-// 	fmt.Println(f.InfoStep.AllStepsInPart)
-// }
-
-// func (f *FileProcessingService) GetParagraph() {
-// 	// var arMeta []domain.InfoStep
-// 	// var meta domain.InfoStep
-// 	for key, value := range f.InfoStep.AllStepsInPart {
-// 		// meta.
-// 		fmt.Println(key, value)
-// 	}
-// }
-
-// func (f *FileProcessingService) GetMainSteps() {
-// 	// var infoArr []domain.InfoStep
-// 	var info domain.InfoStep
-// 	var arrayOneRange []string
-// 	for key, value := range f.InfoStep.AllStepsInPart {
-// 		info.Paragraph = key
-// 		if len(value) > 0 {
-// 			for k, v := range value {
-// 				info.NumberInParagraph = k
-// 				arrayOneRange = append(arrayOneRange, v)
-// 			}
-// 		}
-// 	}
-// 	// f.InfoStep.ArrayOneRange = arrayOneRange
-// 	var arrayChangeOneRange []string
-// 	for _, value := range arrayOneRange {
-// 		res := Replace(value)
-// 		arrayChangeOneRange = append(arrayChangeOneRange, res)
-// 	}
-// 	f.InfoStep.ArrayOneRange = arrayChangeOneRange
-// }
-
-// func (f *FileProcessingService) ReadFF() {
-// 	for key, value := range f.InfoStep.AllStepsInPart {
-// 		fmt.Println(key, value)
-// 	}
-// }
-
 func (f *FileProcessingService) ReadProcessing(file string) error {
 	f.File = file
 
@@ -150,8 +114,6 @@ func (f *FileProcessingService) ReadProcessing(file string) error {
 	if err != nil {
 		return err
 	}
-
-	// f.InfoStep.FileName = file
 
 	ps, err := r.ReadAll()
 	if err != nil {
@@ -161,61 +123,17 @@ func (f *FileProcessingService) ReadProcessing(file string) error {
 	f.GetPage()
 	f.GetAllSteps()
 	f.ParseMainAndSlaveSteps()
-	f.GetInfoBoth()
-	f.CheckSteps()
+	err = f.GetInfoBoth()
+	if err != nil {
+		return err
+	}
+	err = f.CheckSteps()
+	if err != nil {
+		return err
+	}
 	r.Close()
 	return nil
 }
-
-// func ReplaceFixStep(st string) string {
-// 	// f.InfoStep.ArrayReplaces = make([]string, len(f.InfoStep.ArrayOneRange))
-// 	// copy(f.InfoStep.ArrayReplaces, f.InfoStep.ArrayOneRange)
-// 	// var doneReplace []string
-// 	var lt = map[string]string{
-// 		"Л":   "R",
-// 		"К":   "N",
-// 		"с":   "c",
-// 		"C":   "B",
-// 		"С":   "B",
-// 		"Ф":   "Q",
-// 		"Кр":  "K",
-// 		":":   "x",
-// 		" : ": "x",
-// 		"е":   "e",
-// 		"...": "",
-// 		"0":   "O",
-// 		"—":   "-",
-// 	}
-// 	// for _, st := range f.InfoStep.ArrayOneRange {
-// 	// st = strings.Replace(st, "(_", "", -1)
-// 	// st = strings.Replace(st, "_)", "", -1)
-// 	// st = strings.Replace(st, ".__", "", -1)
-// 	// st = strings.Replace(st, "__", "", -1)
-// 	st = strings.Replace(st, "С : ", "Bx", -1)
-// 	st = strings.Replace(st, ".__", "", -1)
-// 	st = strings.Replace(st, ". __", "", -1)
-// 	st = strings.Replace(st, "Ф : ", "Qx", -1)
-// 	st = strings.Replace(st, " : ", "x", -1)
-// 	for key, value := range lt {
-// 		st = strings.Replace(st, key, value, -1)
-// 	}
-// 	return st
-// 	// doneReplace = append(doneReplace, st)
-// 	// }
-// 	// copy(f.InfoStep.ArrayReplaces, doneReplace)
-// }
-
-// func (f *FileProcessingService) CleanLastDota() {
-// 	var arrayCleanLastDora []string
-
-// 	var re = regexp.MustCompile(`(?m)\.$`)
-// 	for _, value := range f.InfoStep.ArrayReplaces {
-// 		s := strings.TrimRight(value, " ")
-// 		result := re.ReplaceAllString(s, "")
-// 		arrayCleanLastDora = append(arrayCleanLastDora, result)
-// 	}
-// 	f.InfoStep.ArrayReplaces = arrayCleanLastDora
-// }
 
 func (f *FileProcessingService) ParseMainAndSlaveSteps() {
 	var mm domain.MetaStep
@@ -227,54 +145,53 @@ func (f *FileProcessingService) ParseMainAndSlaveSteps() {
 		if !jf {
 			mm = value
 			mm.Main = true
-			// mm.StepString = value
 			arrayTypeStep = append(arrayTypeStep, mm)
 		} else {
 			mm = value
 			mm.Main = false
-			// mm.StepString = value
 			arrayTypeStep = append(arrayTypeStep, mm)
 		}
 	}
 	f.InfoStep.ArrayMetaStep = arrayTypeStep
 }
 
-func (f *FileProcessingService) GetInfoBoth() {
+func (f *FileProcessingService) GetInfoBoth() error {
 	var metaA []domain.MetaStep
 	var meta domain.MetaStep
 	var re = regexp.MustCompile(`(?m)[0-9]{1,2}\.`)
+	game := chess.NewGame()
 	for _, value := range f.InfoStep.ArrayMetaStep {
-		// var arIntIndex []int
+
 		value.StepString = strings.Replace(value.StepString, "(_", "", -1)
 		value.StepString = strings.Replace(value.StepString, "_)", "", -1)
 		value.StepString = strings.Replace(value.StepString, ".__", "", -1)
 		value.StepString = strings.Replace(value.StepString, "__", "", -1)
 		meta = value
-		// arNumber := re.FindAllString(value.StepString, -1)
-		// for _, val := range arNumber {
-		// 	v1 := strings.Trim(val, "")
-		// 	v2 := strings.ReplaceAll(v1, ".", "")
-		// 	v3 := strings.ReplaceAll(v2, "", "")
-		// 	i, err := strconv.Atoi(v3)
-		// 	if err != nil {
-		// 		log.Fatal(i)
-		// 	}
-		// 	// arIntIndex = append(arIntIndex, i)
-		// }
+
+		arIntIndexString := re.FindAllString(value.StepString, -1)
+		var arIntIndex []int
+		for _, value := range arIntIndexString {
+			value = strings.Replace(value, ".", "", -1)
+			i, _ := strconv.Atoi(value)
+			arIntIndex = append(arIntIndex, i)
+		}
 
 		arrayStep := re.Split(value.StepString, -1)
 
 		var metaBoth domain.MetaBoth
 		var arMetaBothTrim []domain.MetaBoth
-		for _, v := range arrayStep {
-			// for _, va := range arIntIndex {
+		for k, v := range arrayStep {
 			v1 := strings.Trim(v, " ")
 			if len(v) > 0 {
 				metaBoth.BothString = v1
-				// metaBoth.NumberStep = va
+				metaBoth.NumberStep = arIntIndex[k-1]
 				arMetaBothTrim = append(arMetaBothTrim, metaBoth)
 			}
-			// }
+
+			for k, v := range arMetaBothTrim {
+				v.NumberStep = k
+			}
+
 			meta.MetaBoth = arMetaBothTrim
 		}
 
@@ -299,11 +216,33 @@ func (f *FileProcessingService) GetInfoBoth() {
 				if i == 0 {
 					oneStep.Step = j
 					oneStep.Color = "w"
+					if oneStep.Step == ".." {
+						continue
+					} else {
+						err := game.MoveStr(oneStep.Step)
+						if err != nil {
+							err = ErrorSteps(err, j, v.NumberStep, v.BothString, value.StepString, v.Main, v.Paragraph, v.NumberInParagraph)
+							return err
+						}
+					}
+					fen := game.FEN()
+					position := game.Position()
+					oneStep.FEN = fen
+					oneStep.Position = position
 					arOneStep = append(arOneStep, oneStep)
 					aOneStep = append(aOneStep, oneStep)
 				} else {
 					oneStep.Step = j
 					oneStep.Color = "b"
+					err := game.MoveStr(oneStep.Step)
+					if err != nil {
+						err = ErrorSteps(err, j, v.NumberStep, v.BothString, value.StepString, v.Main, v.Paragraph, v.NumberInParagraph)
+						return err
+					}
+					fen := game.FEN()
+					position := game.Position()
+					oneStep.FEN = fen
+					oneStep.Position = position
 					arOneStep = append(arOneStep, oneStep)
 					aOneStep = append(aOneStep, oneStep)
 				}
@@ -315,9 +254,10 @@ func (f *FileProcessingService) GetInfoBoth() {
 		arMetaStep = append(arMetaStep, mStep)
 		f.InfoStep.ArrayMetaStep = arMetaStep
 	}
+	return nil
 }
 
-func (f *FileProcessingService) CheckSteps() {
+func (f *FileProcessingService) CheckSteps() error {
 	game := chess.NewGame()
 	n := true
 	for _, value := range f.InfoStep.ArrayMetaStep {
@@ -334,13 +274,14 @@ func (f *FileProcessingService) CheckSteps() {
 						}
 						log.Println(err, value)
 						n = false
-						break
+						return err
 					}
 					fmt.Println(game.Position().Board().Draw())
 				}
 			}
 		}
 	}
+	return nil
 }
 
 func Replace(st string) string {
@@ -371,116 +312,3 @@ func Replace(st string) string {
 	st = strings.Replace(st, "0-0", "O-O", -1)
 	return st
 }
-
-// func (f *FileProcessingService) EveryBothSteps() {
-// 	var re = regexp.MustCompile(`(?m)[0-9]{1,2}\.`)
-// 	for _, value := range f.InfoStep.ArrayTypeSteps {
-// 		value.StepString = strings.Replace(value.StepString, "(_", "", -1)
-// 		value.StepString = strings.Replace(value.StepString, "_)", "", -1)
-// 		value.StepString = strings.Replace(value.StepString, ".__", "", -1)
-// 		value.StepString = strings.Replace(value.StepString, "__", "", -1)
-// 		// fmt.Println(value.StepString)
-// 		arrayIndex := re.FindAllString(value.StepString, -1)
-// 		arrayStep := re.Split(value.StepString, -1)
-
-// 		var arrIndex []int
-// 		var arrStep []string
-// 		var st domain.MetaStep
-// 		var stBoth []domain.MetaStep
-
-// 		// re2 := regexp.MustCompile(`(?m)\.`)
-// 		for _, value := range arrayIndex {
-// 			v1 := strings.Trim(value, "")
-// 			v2 := strings.ReplaceAll(v1, ".", "")
-// 			v3 := strings.ReplaceAll(v2, "", "")
-// 			i, err := strconv.Atoi(v3)
-// 			if err != nil {
-// 				log.Fatal(i)
-// 			}
-// 			// fmt.Println(v3)
-// 			arrIndex = append(arrIndex, i)
-// 		}
-// 		// fmt.Println(arrIndex, " - ", arrayStep)
-
-// 		for _, value := range arrayStep {
-// 			v1 := strings.Trim(value, " ")
-// 			if value != "" {
-// 				arrStep = append(arrStep, v1)
-// 			}
-// 		}
-
-// 		for i := 0; i < len(arrIndex); i++ {
-// 			st.Number = arrIndex[i]
-// 			st.BothString = arrStep[i]
-// 			stBoth = append(stBoth, st)
-// 		}
-
-// 		f.InfoStep.AllInfoStep = stBoth
-
-// 		var oneStep domain.OneStep
-// 		var arrayOneStep []domain.OneStep
-
-// 		var va []domain.MetaStep
-// 		// var strA []string
-// 		for _, value = range f.InfoStep.AllInfoStep {
-// 			v1 := strings.Split(value.StepString, " ")
-// 			value.Both = v1
-// 			for i, _ := range value.Both {
-// 				if i != 0 {
-// 					oneStep.Color = "w"
-// 					oneStep.Step = v1[i]
-// 					oneStep.Number = value.Number
-// 					arrayOneStep = append(arrayOneStep, oneStep)
-// 				} else {
-// 					oneStep.Color = "b"
-// 					oneStep.Step = v1[i]
-// 					oneStep.Number = value.Number
-// 					arrayOneStep = append(arrayOneStep, oneStep)
-// 				}
-// 			}
-// 			value.EveryStep = arrayOneStep
-// 			va = append(va, value)
-// 		}
-// 		f.InfoStep.AllInfoStep = va
-
-// 	}
-// }
-
-// func (f *FileProcessingService) InfoStepsN() {
-
-// 	var arraySteps []domain.MetaStep
-// 	for _, v := range f.InfoStep.ArrayMapSteps {
-// 		for k, j := range v {
-// 			var step domain.MetaStep
-// 			res, err := strconv.ParseBool(k)
-// 			if err != nil {
-// 				step.Main = res
-// 			}
-
-// 			step.StepString = j
-// 			arraySteps = append(arraySteps, step)
-// 		}
-// 	}
-// 	// fmt.Println(arraySteps)
-// }
-
-// func (f *FileProcessingService) ParseSteps() {
-
-// 	var re = regexp.MustCompile(`(?m)\d{0,2}.\.`)
-// 	var splitArray [][]string
-// 	var ll []string
-
-// 	for _, value := range f.InfoStep.ArrayReplaces {
-// 		number := re.FindAllString(value, -1)
-// 		fmt.Println(number)
-// 		sa := re.Split(value, -1)
-// 		for _, v := range sa {
-// 			if len(v) != 0 {
-// 				v = strings.Trim(v, " ")
-// 				ll = append(ll, v)
-// 			}
-// 		}
-// 		splitArray = append(splitArray, ll)
-// 	}
-// 	f.InfoStep.ArraySplitSteps = splitArray
-// }

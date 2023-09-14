@@ -7,6 +7,7 @@ import (
 
 type IProcessingService interface {
 	ReadProcessing(string) error
+	CheckSteps() error
 }
 
 type IServicesSteps interface {

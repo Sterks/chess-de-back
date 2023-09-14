@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	Http     HttpConfig `mapstructure:"http"`
-	Database Database   `mapstructure:"Database"`
+	Database Database   `mapstructure:"database"`
 	MongoDB  MongoDB    `mapstructure:"mongo_db"`
 }
 

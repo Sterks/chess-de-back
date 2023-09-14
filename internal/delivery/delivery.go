@@ -69,12 +69,21 @@ func (h *Handler) saveUpload(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "No file exists",
 		})
+		return
 	}
 
 	if err := h.services.ProcessingService.ReadProcessing(file.Filename); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "No file opened",
+			"message": err.Error(),
 		})
+		return
+	}
+
+	if err := h.services.ProcessingService.CheckSteps(); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
 	}
 
 	c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
