@@ -5,7 +5,6 @@ import (
 	"chess-backend/internal/repository"
 	"errors"
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -30,6 +29,7 @@ func ErrorSteps(err error,
 }
 
 type FileProcessingService struct {
+	NameBook string
 	File     string
 	Repo     repository.IRepositories
 	Source   []string
@@ -40,6 +40,10 @@ func NewFileProcessingService(repo repository.IRepositories) *FileProcessingServ
 	return &FileProcessingService{
 		Repo: repo,
 	}
+}
+
+func (f *FileProcessingService) AddNamesBook(str string) {
+	f.NameBook = str
 }
 
 func (f *FileProcessingService) GetSource(source []string) {
@@ -60,6 +64,10 @@ func (f *FileProcessingService) GetPage() {
 			info.NumberParty = page2[0]
 		}
 	}
+	info.NumberParty = strings.ReplaceAll(info.NumberParty, "\"", "")
+	info.NumberParty = strings.ReplaceAll(info.NumberParty, "”", "")
+	info.NumberParty = strings.Trim(info.NumberParty, " ")
+
 	f.InfoStep = info
 }
 
@@ -124,10 +132,6 @@ func (f *FileProcessingService) ReadProcessing(file string) error {
 	f.GetAllSteps()
 	f.ParseMainAndSlaveSteps()
 	err = f.GetInfoBoth()
-	if err != nil {
-		return err
-	}
-	err = f.CheckSteps()
 	if err != nil {
 		return err
 	}
@@ -253,36 +257,44 @@ func (f *FileProcessingService) GetInfoBoth() error {
 		}
 		arMetaStep = append(arMetaStep, mStep)
 		f.InfoStep.ArrayMetaStep = arMetaStep
-	}
-	return nil
-}
 
-func (f *FileProcessingService) CheckSteps() error {
-	game := chess.NewGame()
-	n := true
-	for _, value := range f.InfoStep.ArrayMetaStep {
-
-		if !n {
-			break
-		}
-		if value.Main {
-			for _, v := range value.MetaBoth {
-				for _, j := range v.OneStep {
-					if err := game.MoveStr(j.Step); err != nil {
-						if j.Step == ".." {
-							continue
-						}
-						log.Println(err, value)
-						n = false
-						return err
-					}
-					fmt.Println(game.Position().Board().Draw())
-				}
-			}
+		var book domain.InfoStep
+		book = f.InfoStep
+		book.Name = f.NameBook
+		err := f.Repo.StepsSave(book)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
 }
+
+// func (f *FileProcessingService) CheckSteps() error {
+// 	game := chess.NewGame()
+// 	n := true
+// 	for _, value := range f.InfoStep.ArrayMetaStep {
+
+// 		if !n {
+// 			break
+// 		}
+// 		if value.Main {
+// 			for _, v := range value.MetaBoth {
+// 				for _, j := range v.OneStep {
+// 					if err := game.MoveStr(j.Step); err != nil {
+// 						if j.Step == ".." {
+// 							continue
+// 						}
+// 						log.Println(err, value)
+// 						n = false
+// 						return err
+// 					}
+// 					fmt.Println(game.Position().Board().Draw())
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
 
 func Replace(st string) string {
 	var lt = map[string]string{

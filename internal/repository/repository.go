@@ -6,8 +6,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+type IRepoStepSave interface {
+}
+
 type IRepositories interface {
 	GetAllSteps() ([]domain.InfoStep, error)
+	StepsSave(domain.InfoStep) error
 }
 
 type Repositories struct {

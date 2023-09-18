@@ -19,6 +19,29 @@ func NewRepoStep(mongoDB *mongo.Client) *RepoSteps {
 	}
 }
 
+func (r *RepoSteps) StepsSave(book domain.InfoStep) error {
+
+	var findBook domain.InfoStep
+	coll := r.MongoDB.Database("chess").Collection("Books")
+
+	filter := bson.D{{"Name", book.Name}, {"Party", book.Party}, {"NumberParty", book.NumberParty}}
+	err := coll.FindOneAndReplace(context.TODO(), filter, book, nil).Decode(&findBook)
+	if err != nil {
+		log.Println(err)
+	}
+
+	// coll.FindOneAndUpdate(context.TODO(), filter, book, nil).Decode(&findBook)
+	ll := len(findBook.Name)
+	if ll == 0 {
+		_, err := coll.InsertOne(context.TODO(), book, nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (r *RepoSteps) GetAllSteps() ([]domain.InfoStep, error) {
 	// filter := bson.D{{"Main", true}}
 	filter := bson.D{{}}

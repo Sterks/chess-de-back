@@ -3,12 +3,13 @@ package domain
 import "github.com/notnil/chess"
 
 type InfoStep struct {
+	Name           string     `bson:"Name"`
 	AllStepsInPart [][]string `bson:"AllStepsInPart"`
 	NumberParty    string     `bson:"NumberParty"`
 	Party          string     `bson:"Party"`
 	ArrayMetaStep  []MetaStep `bson:"ArrayMetaStep"`
-	AllStep        []OneStep  `bson:"AllStep"`
 }
+
 type MetaStep struct {
 	Main              bool       `bson:"Main"`
 	Steps             string     `bson:"Steps"`
@@ -28,8 +29,8 @@ type MetaBoth struct {
 	StepString        string    `bson:"StepString"`
 	Both              []string  `bson:"Both"`
 	BothString        string    `bson:"BothString"`
-	OneStep           []OneStep `bson:"OneStep"`
 	NumberStep        int       `bson:"NumberStep"`
+	OneStep           []OneStep `bson:"OneStep"`
 }
 
 type OneStep struct {

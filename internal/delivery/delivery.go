@@ -28,9 +28,6 @@ func (h *Handler) Init(cfg *config.Config) *gin.Engine {
 		corsMiddleware,
 	)
 
-	// docs.SwaggerInfo.Host = fmt.Sprintf("%s:%s", cfg.Http.Host, cfg.Http.Port)
-	// router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
 	router.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
 	})
@@ -54,9 +51,10 @@ func (h *Handler) getAllStep(c *gin.Context) {
 }
 
 func (h *Handler) saveUpload(c *gin.Context) {
+	name := c.Request.FormValue("name")
+
 	_, file, err := c.Request.FormFile("file")
 
-	// The file cannot be received.
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "No file is received",
@@ -64,7 +62,7 @@ func (h *Handler) saveUpload(c *gin.Context) {
 		return
 	}
 
-	// h.services.ProcessingService.ReadProcessing(f)
+	h.services.ProcessingService.AddNamesBook(name)
 	if err := c.SaveUploadedFile(file, "upload/"+file.Filename); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "No file exists",
@@ -79,12 +77,5 @@ func (h *Handler) saveUpload(c *gin.Context) {
 		return
 	}
 
-	if err := h.services.ProcessingService.CheckSteps(); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": err.Error(),
-		})
-		return
-	}
-
-	c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
+	c.String(http.StatusOK, fmt.Sprintf("%s uploaded!", file.Filename))
 }

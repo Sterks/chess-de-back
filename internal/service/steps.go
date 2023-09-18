@@ -15,6 +15,8 @@ func NewStepsService(repo repository.IRepositories) *StepService {
 	}
 }
 
+// func (r *RepoSteps)
+
 func (s *StepService) GetSteps() ([]domain.InfoStep, error) {
 	allSteps, err := s.Repo.GetAllSteps()
 	if err != nil {
