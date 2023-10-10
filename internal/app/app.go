@@ -17,6 +17,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var ctx = context.TODO()
+
 func Run(configPath string) error {
 
 	cfg, err := config.InitConfig(configPath)
@@ -26,12 +28,17 @@ func Run(configPath string) error {
 
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(cfg.MongoDB.URL))
 	if err != nil {
-		return err
+		log.Println("Mongo is not running")
+	}
+
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		log.Fatalln("Does't work mongo server! ", err)
 	}
 
 	defer func() {
 		if err := client.Disconnect(context.TODO()); err != nil {
-			panic(err)
+			log.Fatalln("Mongo is not running")
 		}
 	}()
 

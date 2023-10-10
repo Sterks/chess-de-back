@@ -22,7 +22,7 @@ func NewRepoStep(mongoDB *mongo.Client) *RepoSteps {
 func (r *RepoSteps) StepsSave(book domain.InfoStep) error {
 
 	var findBook domain.InfoStep
-	coll := r.MongoDB.Database("chess").Collection("Books")
+	coll := r.MongoDB.Database("admin").Collection("Books")
 
 	filter := bson.D{{"Name", book.Name}, {"Party", book.Party}, {"NumberParty", book.NumberParty}}
 	err := coll.FindOneAndReplace(context.TODO(), filter, book, nil).Decode(&findBook)

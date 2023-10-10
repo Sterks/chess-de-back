@@ -135,6 +135,14 @@ func (f *FileProcessingService) ReadProcessing(file string) error {
 	if err != nil {
 		return err
 	}
+	game, err := f.CheckMainSteps()
+	if err != nil {
+		return err
+	}
+	err = f.CheckSecondSteps2(game)
+	if err != nil {
+		return err
+	}
 	r.Close()
 	return nil
 }
@@ -163,7 +171,7 @@ func (f *FileProcessingService) GetInfoBoth() error {
 	var metaA []domain.MetaStep
 	var meta domain.MetaStep
 	var re = regexp.MustCompile(`(?m)[0-9]{1,2}\.`)
-	game := chess.NewGame()
+	// game := chess.NewGame()
 	for _, value := range f.InfoStep.ArrayMetaStep {
 
 		value.StepString = strings.Replace(value.StepString, "(_", "", -1)
@@ -220,33 +228,34 @@ func (f *FileProcessingService) GetInfoBoth() error {
 				if i == 0 {
 					oneStep.Step = j
 					oneStep.Color = "w"
-					if oneStep.Step == ".." {
-						continue
-					} else {
-						err := game.MoveStr(oneStep.Step)
-						if err != nil {
-							err = ErrorSteps(err, j, v.NumberStep, v.BothString, value.StepString, v.Main, v.Paragraph, v.NumberInParagraph)
-							return err
-						}
-					}
-					fen := game.FEN()
-					position := game.Position()
-					oneStep.FEN = fen
-					oneStep.Position = position
+					// if oneStep.Step == ".." {
+					// 	continue
+					// } else {
+					// err := game.MoveStr(oneStep.Step)
+					// 	if err != nil {
+					// 		err = ErrorSteps(err, j, v.NumberStep, v.BothString, value.StepString, v.Main, v.Paragraph, v.NumberInParagraph)
+					// 		return err
+					// 	}
+					// }
+					// fen := game.FEN()
+					// position := game.Position()
+					// oneStep.FEN = fen
+					// oneStep.Position = position
 					arOneStep = append(arOneStep, oneStep)
 					aOneStep = append(aOneStep, oneStep)
+					// }
 				} else {
 					oneStep.Step = j
 					oneStep.Color = "b"
-					err := game.MoveStr(oneStep.Step)
-					if err != nil {
-						err = ErrorSteps(err, j, v.NumberStep, v.BothString, value.StepString, v.Main, v.Paragraph, v.NumberInParagraph)
-						return err
-					}
-					fen := game.FEN()
-					position := game.Position()
-					oneStep.FEN = fen
-					oneStep.Position = position
+					// err := game.MoveStr(oneStep.Step)
+					// if err != nil {
+					// err = ErrorSteps(err, j, v.NumberStep, v.BothString, value.StepString, v.Main, v.Paragraph, v.NumberInParagraph)
+					// return err
+					// }
+					// fen := game.FEN()
+					// position := game.Position()
+					// oneStep.FEN = fen
+					// oneStep.Position = position
 					arOneStep = append(arOneStep, oneStep)
 					aOneStep = append(aOneStep, oneStep)
 				}
@@ -269,58 +278,225 @@ func (f *FileProcessingService) GetInfoBoth() error {
 	return nil
 }
 
-// func (f *FileProcessingService) CheckSteps() error {
-// 	game := chess.NewGame()
-// 	n := true
-// 	for _, value := range f.InfoStep.ArrayMetaStep {
+func (f *FileProcessingService) CheckMainSteps() (*chess.Game, error) {
+	game := chess.NewGame()
+	var arMetaStep []domain.MetaStep
+	var mStep domain.MetaStep
+	for _, value := range f.InfoStep.ArrayMetaStep {
+		mStep = value
+		var arrayMetaBoth []domain.MetaBoth
+		var metaBoth domain.MetaBoth
+		if value.Main {
+			for _, v := range value.MetaBoth {
+				v.Main = value.Main
+				v.Paragraph = value.Paragraph
+				v.NumberInParagraph = value.NumberInParagraph
+				var oneSteps []domain.OneStep
+				var oneStep domain.OneStep
+				// var arrOneSteps []domain.OneStep
+				metaBoth = v
+				for _, j := range v.OneStep {
+					if j.Color == "w" {
+						oneStep = j
+						if j.Step == ".." {
+							continue
+						}
+						err := game.MoveStr(j.Step)
+						if err != nil {
+							return nil, errors.New(fmt.Sprintf("%s - %v", value.StepString, err))
+						}
+						oneStep.FEN = game.FEN()
+						fmt.Println(game.Position().Board().Draw())
+						fmt.Println(j.Step, " - ", j.Color)
+					} else if j.Color == "b" {
+						oneStep = j
+						err := game.MoveStr(j.Step)
+						if err != nil {
+							return nil, errors.New(fmt.Sprintf("%s - %v", value.StepString, err))
+						}
+						oneStep.FEN = game.FEN()
+						fmt.Println(game.Position().Board().Draw())
+						fmt.Println(j.Step, " - ", j.Color)
+					}
+					oneSteps = append(oneSteps, oneStep)
+				}
+				metaBoth.OneStep = oneSteps
+				// arrOneSteps = append(arrOneSteps, oneSteps)
+				arrayMetaBoth = append(arrayMetaBoth, metaBoth)
 
-// 		if !n {
-// 			break
-// 		}
-// 		if value.Main {
-// 			for _, v := range value.MetaBoth {
-// 				for _, j := range v.OneStep {
-// 					if err := game.MoveStr(j.Step); err != nil {
-// 						if j.Step == ".." {
-// 							continue
-// 						}
-// 						log.Println(err, value)
-// 						n = false
-// 						return err
-// 					}
-// 					fmt.Println(game.Position().Board().Draw())
-// 				}
-// 			}
-// 		}
-// 	}
-// 	return nil
-// }
+			}
+			// arrayMetaBoth = append(arrayMetaBoth, metaBoth)
+			mStep.MetaBoth = arrayMetaBoth
+		}
+		arMetaStep = append(arMetaStep, mStep)
+		f.InfoStep.ArrayMetaStep = arMetaStep
+		f.getAllStep()
+	}
+	return game, nil
+}
+
+func (f *FileProcessingService) getAllStep() {
+	var arAllStep []string
+	for _, value := range f.InfoStep.ArrayMetaStep {
+		if value.Main == true {
+			for _, v := range value.MetaBoth {
+				for _, va := range v.OneStep {
+					arAllStep = append(arAllStep, va.Step)
+				}
+			}
+		}
+	}
+	for _, value := range arAllStep {
+		fmt.Printf("%s ", value)
+	}
+}
+
+func (f *FileProcessingService) CheckSecondSteps(game *chess.Game) error {
+	var control bool
+	control = false
+	for _, value := range f.InfoStep.ArrayMetaStep {
+		if value.Main == false {
+			for _, v := range value.MetaBoth {
+				l := len(v.OneStep)
+				if l <= 1 {
+					for _, va := range f.InfoStep.ArrayMetaStep {
+						if va.Main == true {
+							for _, vi := range va.MetaBoth {
+								if vi.NumberStep == v.NumberStep-1 {
+									j := false
+									if control == false {
+										for _, vt := range v.OneStep {
+											if j == false {
+												fen, err := chess.FEN(vi.OneStep[1].FEN)
+												if err != nil {
+													return err
+												}
+												game = chess.NewGame(fen)
+												fmt.Println(game.Position().Board().Draw())
+												fmt.Println(game.Position())
+												j = true
+												control = true
+											}
+											fmt.Println(game.Position().Board().Draw())
+											fmt.Println(game.Position())
+											err := game.MoveStr(vt.Step)
+											if err != nil {
+												return errors.New(fmt.Sprintf("%s - %v", value.StepString, err))
+											}
+											fmt.Println(game.Position().Board().Draw())
+											fmt.Println(game.FEN())
+											fmt.Println()
+											// i = i + 1
+										}
+									}
+
+								}
+
+							}
+						}
+					}
+				} else {
+					fmt.Println("next")
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (f *FileProcessingService) CheckSecondSteps2(game *chess.Game) error {
+	var arMetaStepFalse []domain.MetaStep
+	for _, value := range f.InfoStep.ArrayMetaStep {
+
+		if value.Main == false {
+			arMetaStepFalse = append(arMetaStepFalse, value)
+		}
+	}
+
+	for _, v := range arMetaStepFalse {
+		b := v.MetaBoth[0].NumberStep
+		g, err := f.CheckSecondSteps3(game, b)
+		if err != nil {
+			return err
+		}
+		var ar []domain.OneStep
+		for _, val := range v.MetaBoth {
+			for _, j := range val.OneStep {
+				if j.Step == ".." {
+					continue
+				}
+				var on domain.OneStep
+				on = j
+				err := g.MoveStr(j.Step)
+				if err != nil {
+					return err
+				}
+				on.FEN = g.FEN()
+				ar = append(ar, on)
+				fmt.Println(g.Position().Board().Draw())
+				fmt.Println(g.FEN(), j.Step)
+			}
+
+		}
+
+	}
+
+	return nil
+}
+
+func (f *FileProcessingService) CheckSecondSteps3(game *chess.Game, numberStep int) (*chess.Game, error) {
+	for _, value := range f.InfoStep.ArrayMetaStep {
+		if value.Main == true {
+			b := GetNumberStep(value, numberStep)
+			// for _, v := range value.MetaBoth {
+			// if v.NumberStep == numberStep {
+			if len(b.OneStep) >= 2 {
+				for _, q := range b.OneStep {
+					fen, err := chess.FEN(b.OneStep[1].FEN)
+					if err != nil {
+						return nil, err
+					}
+					game = chess.NewGame(fen)
+					fmt.Println(game.Position().Board().Draw())
+					fmt.Println(game.Position(), q.Step)
+				}
+			} else {
+				break
+			}
+		}
+		break
+	}
+	return game, nil
+}
+
+func GetNumberStep(f domain.MetaStep, numberStep int) domain.MetaBoth {
+	var b domain.MetaBoth
+	for _, value := range f.MetaBoth {
+		if value.NumberStep == numberStep-1 {
+			b = value
+		}
+	}
+	return b
+}
 
 func Replace(st string) string {
-	var lt = map[string]string{
-		"Л":   "R",
-		"К":   "N",
-		"с":   "c",
-		"C":   "B",
-		"С":   "B",
-		"Ф":   "Q",
-		":":   "x",
-		" : ": "x",
-		"е":   "e",
-		// "...": "",
-		"0-0": "O-O",
-		// "0": "O",
-		"—": "-",
-	}
 	st = strings.Replace(st, "Кр", "K", -1)
+	st = strings.Replace(st, "К", "N", -1)
 	st = strings.Replace(st, "С : ", "Bx", -1)
 	st = strings.Replace(st, ".__", "", -1)
 	st = strings.Replace(st, ". __", "", -1)
 	st = strings.Replace(st, "Ф : ", "Qx", -1)
 	st = strings.Replace(st, " : ", "x", -1)
-	for key, value := range lt {
-		st = strings.Replace(st, key, value, -1)
-	}
+	st = strings.Replace(st, "—", "-", -1)
+	st = strings.Replace(st, "0-0", "O-O", -1)
+	st = strings.Replace(st, "е", "e", -1)
+	st = strings.Replace(st, " : ", "x", -1)
+	st = strings.Replace(st, ":", "x", -1)
+	st = strings.Replace(st, "Ф", "Q", -1)
+	st = strings.Replace(st, "С", "B", -1)
+	st = strings.Replace(st, "C", "B", -1)
+	st = strings.Replace(st, "с", "c", -1)
+	st = strings.Replace(st, "Л", "R", -1)
 	st = strings.Replace(st, "0-0", "O-O", -1)
 	return st
 }
