@@ -7,7 +7,7 @@ import (
 
 type IProcessingService interface {
 	AddNamesBook(string)
-	ReadProcessing(string) error
+	ReadProcessing(string) ([]string, error)
 	// CheckSteps() error
 }
 

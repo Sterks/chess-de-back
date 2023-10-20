@@ -74,13 +74,20 @@ func (f *FileProcessingService) GetPage() {
 func (f *FileProcessingService) GetAllSteps() {
 	var stringSteps []string
 	var str [][]string
-	re := regexp.MustCompile(`(?m)[(_]?\w.+?_[_)]`)
+	re := regexp.MustCompile(`(?m)[(_]{2}\w.+?_[_)]`)
 
 	for _, v := range f.Source {
 
 		stringSteps = re.FindAllString(v, -1)
 		if len(stringSteps) != 0 && stringSteps[0] != "____" {
-			str = append(str, stringSteps)
+			var gd []string
+			for _, va := range stringSteps {
+				va = strings.Replace(va, "((_", "(_", -1)
+				va = strings.Replace(va, "…", "...", -1)
+				va = strings.Replace(va, "_))", "(_", -1)
+				gd = append(gd, va)
+			}
+			str = append(str, gd)
 		}
 	}
 	f.InfoStep.AllStepsInPart = str
@@ -115,17 +122,17 @@ func (f *FileProcessingService) GetAllSteps() {
 	f.InfoStep.ArrayMetaStep = metaArrr
 }
 
-func (f *FileProcessingService) ReadProcessing(file string) error {
+func (f *FileProcessingService) ReadProcessing(file string) ([]string, error) {
 	f.File = file
 
 	r, err := docc.NewReader("upload/" + file)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	ps, err := r.ReadAll()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	f.GetSource(ps)
 	f.GetPage()
@@ -133,18 +140,18 @@ func (f *FileProcessingService) ReadProcessing(file string) error {
 	f.ParseMainAndSlaveSteps()
 	err = f.GetInfoBoth()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	game, err := f.CheckMainSteps()
+	steps, _, err := f.CheckMainSteps()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = f.CheckSecondSteps2(game)
-	if err != nil {
-		return err
-	}
+	// err = f.CheckSecondSteps2(game)
+	// if err != nil {
+	// 	return err
+	// }
 	r.Close()
-	return nil
+	return steps, nil
 }
 
 func (f *FileProcessingService) ParseMainAndSlaveSteps() {
@@ -194,10 +201,12 @@ func (f *FileProcessingService) GetInfoBoth() error {
 		var arMetaBothTrim []domain.MetaBoth
 		for k, v := range arrayStep {
 			v1 := strings.Trim(v, " ")
-			if len(v) > 0 {
-				metaBoth.BothString = v1
-				metaBoth.NumberStep = arIntIndex[k-1]
-				arMetaBothTrim = append(arMetaBothTrim, metaBoth)
+			if v != "" && v != " " {
+				if len(v) > 0 {
+					metaBoth.BothString = v1
+					metaBoth.NumberStep = arIntIndex[k-1]
+					arMetaBothTrim = append(arMetaBothTrim, metaBoth)
+				}
 			}
 
 			for k, v := range arMetaBothTrim {
@@ -278,10 +287,11 @@ func (f *FileProcessingService) GetInfoBoth() error {
 	return nil
 }
 
-func (f *FileProcessingService) CheckMainSteps() (*chess.Game, error) {
+func (f *FileProcessingService) CheckMainSteps() ([]string, *chess.Game, error) {
 	game := chess.NewGame()
 	var arMetaStep []domain.MetaStep
 	var mStep domain.MetaStep
+	var steps []string
 	for _, value := range f.InfoStep.ArrayMetaStep {
 		mStep = value
 		var arrayMetaBoth []domain.MetaBoth
@@ -303,7 +313,7 @@ func (f *FileProcessingService) CheckMainSteps() (*chess.Game, error) {
 						}
 						err := game.MoveStr(j.Step)
 						if err != nil {
-							return nil, errors.New(fmt.Sprintf("%s - %v", value.StepString, err))
+							return nil, nil, errors.New(fmt.Sprintf("%s - %v", value.StepString, err))
 						}
 						oneStep.FEN = game.FEN()
 						fmt.Println(game.Position().Board().Draw())
@@ -312,7 +322,7 @@ func (f *FileProcessingService) CheckMainSteps() (*chess.Game, error) {
 						oneStep = j
 						err := game.MoveStr(j.Step)
 						if err != nil {
-							return nil, errors.New(fmt.Sprintf("%s - %v", value.StepString, err))
+							return nil, nil, errors.New(fmt.Sprintf("%s - %v", value.StepString, err))
 						}
 						oneStep.FEN = game.FEN()
 						fmt.Println(game.Position().Board().Draw())
@@ -330,12 +340,12 @@ func (f *FileProcessingService) CheckMainSteps() (*chess.Game, error) {
 		}
 		arMetaStep = append(arMetaStep, mStep)
 		f.InfoStep.ArrayMetaStep = arMetaStep
-		f.getAllStep()
+		steps = f.getAllStep()
 	}
-	return game, nil
+	return steps, game, nil
 }
 
-func (f *FileProcessingService) getAllStep() {
+func (f *FileProcessingService) getAllStep() []string {
 	var arAllStep []string
 	for _, value := range f.InfoStep.ArrayMetaStep {
 		if value.Main == true {
@@ -349,6 +359,7 @@ func (f *FileProcessingService) getAllStep() {
 	for _, value := range arAllStep {
 		fmt.Printf("%s ", value)
 	}
+	return arAllStep
 }
 
 func (f *FileProcessingService) CheckSecondSteps(game *chess.Game) error {
@@ -406,11 +417,18 @@ func (f *FileProcessingService) CheckSecondSteps(game *chess.Game) error {
 
 func (f *FileProcessingService) CheckSecondSteps2(game *chess.Game) error {
 	var arMetaStepFalse []domain.MetaStep
-	for _, value := range f.InfoStep.ArrayMetaStep {
-
-		if value.Main == false {
-			arMetaStepFalse = append(arMetaStepFalse, value)
+	var arMetaStepAll []domain.MetaStep
+	for k, v := range f.InfoStep.ArrayMetaStep {
+		arMetaStepAll = append(arMetaStepAll, v)
+		fmt.Println(k, v)
+		if k != 0 {
+			if v.Main == false {
+				fmt.Println(f.InfoStep.ArrayMetaStep[k+1])
+			}
 		}
+		// if value.Main == false {
+		// 	arMetaStepFalse = append(arMetaStepFalse, value)
+		// }
 	}
 
 	for _, v := range arMetaStepFalse {
@@ -497,6 +515,7 @@ func Replace(st string) string {
 	st = strings.Replace(st, "C", "B", -1)
 	st = strings.Replace(st, "с", "c", -1)
 	st = strings.Replace(st, "Л", "R", -1)
+	st = strings.Replace(st, "0-0-0", "O-O-O", -1)
 	st = strings.Replace(st, "0-0", "O-O", -1)
 	return st
 }

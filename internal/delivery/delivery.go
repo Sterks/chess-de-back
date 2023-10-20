@@ -5,6 +5,7 @@ import (
 	"chess-backend/internal/service"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -70,12 +71,15 @@ func (h *Handler) saveUpload(c *gin.Context) {
 		return
 	}
 
-	if err := h.services.ProcessingService.ReadProcessing(file.Filename); err != nil {
+	steps, err := h.services.ProcessingService.ReadProcessing(file.Filename)
+	sentence := strings.Join(steps, " ")
+	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": err.Error(),
+			"Error": err.Error(),
 		})
-		return
+	} else {
+		c.String(http.StatusOK, fmt.Sprintf("Основные ходы: %v\n", sentence))
 	}
 
-	c.String(http.StatusOK, fmt.Sprintf("%s uploaded!", file.Filename))
+	c.String(http.StatusOK, fmt.Sprintf(" ---- %s uploaded!", file.Filename))
 }
